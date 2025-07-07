@@ -111,6 +111,15 @@ Receipt Splitter is a web-based application that uses AI to automatically parse 
 ```
 Changelog:
 - July 07, 2025. Initial setup
+- July 07, 2025. Major improvements:
+  - Replaced checkboxes with toggle buttons for easier mobile interaction
+  - Added image preview with full-screen modal for receipt comparison
+  - Implemented real-time split calculation (removed manual calculate button)
+  - Added mathematical validation to ensure totals always match
+  - Fixed subtotal/tax items appearing in items list
+  - Added assignment progress indicator showing percentage complete
+  - Improved UI with animations, better empty states, and mobile optimizations
+  - Enhanced error handling with user-friendly messages
 ```
 
 ## User Preferences

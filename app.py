@@ -129,7 +129,8 @@ def extract_receipt_data(image_base64, media_type):
         }
         
         Rules:
-        - Extract all food/drink items with their individual prices
+        - Extract ONLY actual food/drink items with their individual prices
+        - Do NOT include subtotal, tax, tip, or total as items in the items array
         - If tip is not present, set it to 0.00
         - Use numbers (not strings) for all price fields
         - Date should be in YYYY-MM-DD format, use today's date if not visible
@@ -189,6 +190,53 @@ def extract_receipt_data(image_base64, media_type):
         logging.error(f"Error calling Claude API: {str(e)}")
         raise
 
+def validate_receipt_data(data):
+    """Validate and clean receipt data"""
+    import re
+    
+    # Filter out non-item entries from items list
+    filtered_items = []
+    for item in data.get('items', []):
+        item_name = item.get('name', '').lower()
+        # Skip items that are likely subtotal, tax, or total
+        if any(keyword in item_name for keyword in ['subtotal', 'sub total', 'tax', 'sales tax', 'total', 'tip', 'gratuity']):
+            continue
+        filtered_items.append(item)
+    
+    data['items'] = filtered_items
+    
+    # Calculate the sum of items
+    items_sum = sum(item.get('price', 0) for item in filtered_items)
+    
+    # Ensure values are numbers
+    subtotal = float(data.get('subtotal', 0))
+    tax = float(data.get('tax', 0))
+    tip = float(data.get('tip', 0))
+    total = float(data.get('total', 0))
+    
+    # If subtotal is 0 or doesn't match items sum, use items sum
+    if subtotal == 0 or abs(subtotal - items_sum) > 0.01:
+        logging.debug(f"Adjusting subtotal from {subtotal} to items sum {items_sum}")
+        data['subtotal'] = round(items_sum, 2)
+        subtotal = data['subtotal']
+    
+    # Validate total calculation
+    expected_total = subtotal + tax + tip
+    if abs(total - expected_total) > 0.01:
+        logging.debug(f"Adjusting total from {total} to calculated {expected_total}")
+        data['total'] = round(expected_total, 2)
+    
+    # Ensure all numeric values are properly rounded
+    data['subtotal'] = round(subtotal, 2)
+    data['tax'] = round(tax, 2)
+    data['tip'] = round(tip, 2)
+    data['total'] = round(data['total'], 2)
+    
+    for item in data['items']:
+        item['price'] = round(float(item.get('price', 0)), 2)
+    
+    return data
+
 @app.route('/')
 def index():
     """Serve the main application page"""
@@ -218,6 +266,9 @@ def process_receipt():
         
         # Extract receipt data using Claude
         receipt_data = extract_receipt_data(image_base64, media_type)
+        
+        # Additional validation and filtering
+        receipt_data = validate_receipt_data(receipt_data)
         
         return jsonify(receipt_data)
         

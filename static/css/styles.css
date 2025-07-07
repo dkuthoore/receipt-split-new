@@ -140,11 +140,12 @@ body {
 }
 
 .table-success {
-    background-color: rgba(40, 167, 69, 0.3) !important;
+    background-color: var(--accent-success) !important;
 }
 
 .table-success td {
     color: var(--text-primary) !important;
+    font-weight: 600;
 }
 
 /* Person Tags */
@@ -228,13 +229,7 @@ body {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.5rem;
-}
-
-.receipt-info .info-item:last-child {
-    margin-bottom: 0;
-    font-weight: 600;
-    border-top: 1px solid var(--border-color);
-    padding-top: 0.5rem;
+    color: var(--text-primary);
 }
 
 /* Responsive Improvements */
@@ -349,4 +344,62 @@ small, .small {
 
 .btn-close-white {
     filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Polishing touches */
+.receipt-info .info-item:last-child {
+    margin-bottom: 0;
+    font-weight: 600;
+    border-top: 2px solid var(--accent-primary);
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* Results table improvements */
+.table-dark tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Empty state styling */
+.empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Animation for real-time updates */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.assignment-item {
+    animation: fadeIn 0.3s ease-out;
+}
+
+#results-section .table {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .person-btn {
+        min-width: auto;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    .assignment-item h6 {
+        font-size: 0.95rem;
+    }
+    
+    .receipt-info {
+        font-size: 0.9rem;
+    }
 }

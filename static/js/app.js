@@ -24,9 +24,6 @@ class ReceiptSplitter {
             if (e.key === 'Enter') this.addPerson();
         });
 
-        // Calculate button
-        document.getElementById('calculate-btn').addEventListener('click', this.calculateSplit.bind(this));
-
         // Start over button
         document.getElementById('start-over-btn').addEventListener('click', this.startOver.bind(this));
     }
@@ -209,6 +206,9 @@ class ReceiptSplitter {
         input.value = '';
         this.updatePeopleDisplay();
         this.updateAssignmentSection();
+        
+        // Calculate split when people are added
+        this.calculateSplit();
     }
 
     removePerson(name) {
@@ -232,7 +232,7 @@ class ReceiptSplitter {
         peopleList.innerHTML = this.people.map(person => `
             <span class="person-tag">
                 ${person}
-                <span class="remove-person" onclick="app.removePerson('${person}')">
+                <span class="remove-person" onclick="app.removePerson('${person}')" title="Remove ${person}">
                     <i class="fas fa-times"></i>
                 </span>
             </span>
@@ -248,20 +248,43 @@ class ReceiptSplitter {
         if (!this.receiptData || this.people.length === 0) return;
 
         const assignmentList = document.getElementById('assignment-list');
+        
+        if (this.receiptData.items.length === 0) {
+            assignmentList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No items found on the receipt</p>
+                </div>
+            `;
+            return;
+        }
+        
         assignmentList.innerHTML = this.receiptData.items.map((item, index) => `
             <div class="assignment-item">
-                <h6>${item.name} - $${this.formatPrice(item.price)}</h6>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-0">${item.name}</h6>
+                    <span class="badge bg-secondary">$${this.formatPrice(item.price)}</span>
+                </div>
                 <div class="person-buttons">
                     ${this.people.map(person => {
                         const isAssigned = this.assignments[index] && this.assignments[index].includes(person);
+                        const assignedCount = this.assignments[index] ? this.assignments[index].length : 0;
+                        const splitAmount = assignedCount > 0 ? item.price / assignedCount : 0;
                         return `
                             <button class="btn person-btn ${isAssigned ? 'btn-primary' : 'btn-outline-light'}" 
-                                    onclick="app.toggleAssignment(${index}, '${person}')">
+                                    onclick="app.toggleAssignment(${index}, '${person}')"
+                                    title="${isAssigned ? `$${this.formatPrice(splitAmount)} per person` : 'Click to assign'}">
                                 ${person}
                             </button>
                         `;
                     }).join('')}
                 </div>
+                ${this.assignments[index] && this.assignments[index].length > 0 ? `
+                    <small class="text-muted mt-2 d-block">
+                        Split ${this.assignments[index].length} way${this.assignments[index].length > 1 ? 's' : ''}: 
+                        $${this.formatPrice(item.price / this.assignments[index].length)} each
+                    </small>
+                ` : ''}
             </div>
         `).join('');
     }
@@ -281,18 +304,52 @@ class ReceiptSplitter {
         
         // Update the assignment section to reflect changes
         this.updateAssignmentSection();
+        
+        // Calculate split in real-time
+        this.calculateSplit();
+        
+        // Update assignment summary
+        this.updateAssignmentSummary();
+    }
+    
+    updateAssignmentSummary() {
+        if (!this.receiptData || this.people.length === 0) {
+            document.getElementById('assignment-summary').style.display = 'none';
+            return;
+        }
+        
+        // Calculate how many items are assigned
+        const totalItems = this.receiptData.items.length;
+        const assignedItems = Object.values(this.assignments).filter(assignment => assignment.length > 0).length;
+        const percentage = totalItems > 0 ? Math.round((assignedItems / totalItems) * 100) : 0;
+        
+        const summaryDiv = document.getElementById('assignment-summary');
+        summaryDiv.style.display = 'block';
+        
+        summaryDiv.innerHTML = `
+            <div class="alert alert-info py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="fas fa-chart-pie me-2"></i>
+                        ${assignedItems} of ${totalItems} items assigned
+                    </span>
+                    <span class="badge bg-${percentage === 100 ? 'success' : 'warning'}">
+                        ${percentage}%
+                    </span>
+                </div>
+                ${percentage < 100 ? `
+                    <div class="progress mt-2" style="height: 4px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: ${percentage}%"></div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 
     async calculateSplit() {
         if (!this.receiptData || this.people.length === 0) {
-            this.showError('Please add people and assign items before calculating.');
-            return;
-        }
-
-        // Check if any items are assigned
-        const hasAssignments = Object.values(this.assignments).some(assignment => assignment.length > 0);
-        if (!hasAssignments) {
-            this.showError('Please assign at least one item to someone.');
+            // Hide results if no people
+            this.hideStep('results-section');
             return;
         }
 
@@ -323,12 +380,14 @@ class ReceiptSplitter {
 
         } catch (error) {
             console.error('Error calculating split:', error);
-            this.showError(`Failed to calculate split: ${error.message}`);
+            // Don't show error for real-time calculations
         }
     }
 
     displayResults(splitData) {
         const resultsTable = document.getElementById('results-table');
+        
+        // Show individual splits
         resultsTable.innerHTML = splitData.splits.map(split => `
             <tr>
                 <td>${split.name}</td>
@@ -336,13 +395,29 @@ class ReceiptSplitter {
             </tr>
         `).join('');
 
-        // Add total row
+        // Add total row with validation
+        const expectedTotal = this.receiptData.total;
+        const calculatedTotal = splitData.total_split;
+        const isMatching = Math.abs(expectedTotal - calculatedTotal) < 0.01;
+        
         resultsTable.innerHTML += `
             <tr class="table-success">
                 <td><strong>Total Split</strong></td>
-                <td><strong>$${this.formatPrice(splitData.total_split)}</strong></td>
+                <td><strong>$${this.formatPrice(calculatedTotal)}</strong></td>
             </tr>
         `;
+        
+        // Add validation row if totals don't match
+        if (!isMatching && expectedTotal > 0) {
+            resultsTable.innerHTML += `
+                <tr class="text-warning">
+                    <td colspan="2" class="text-center small">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Receipt total: $${this.formatPrice(expectedTotal)}
+                    </td>
+                </tr>
+            `;
+        }
     }
 
     showStep(sectionId) {

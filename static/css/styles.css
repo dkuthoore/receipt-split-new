@@ -165,7 +165,7 @@ body {
     color: var(--accent-danger);
 }
 
-/* Assignment Checkboxes */
+/* Assignment Buttons */
 .assignment-item {
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -176,28 +176,44 @@ body {
 
 .assignment-item h6 {
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
-.form-check {
-    margin-bottom: 0.5rem;
+.person-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-.form-check-input {
-    background-color: var(--bg-secondary);
-    border-color: var(--border-color);
+.person-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    min-width: 80px;
 }
 
-.form-check-input:checked {
+.person-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.person-btn.btn-primary {
     background-color: var(--accent-primary);
     border-color: var(--accent-primary);
+    color: white;
 }
 
-.form-check-input:focus {
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+.person-btn.btn-outline-light {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+    background-color: transparent;
 }
 
-.form-check-label {
+.person-btn.btn-outline-light:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--text-primary);
     color: var(--text-primary);
 }
 
@@ -303,4 +319,34 @@ p, span, div {
 /* Small text improvements */
 small, .small {
     color: var(--text-secondary) !important;
+}
+
+/* Image Preview Styles */
+#image-preview {
+    margin-top: 1rem;
+}
+
+#preview-thumbnail {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+#preview-thumbnail:hover {
+    border-color: var(--accent-primary);
+    transform: scale(1.02);
+}
+
+/* Modal Styles */
+.modal-content.bg-dark {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color);
+}
+
+.modal-header.border-secondary {
+    border-bottom-color: var(--border-color) !important;
+}
+
+.btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
 }

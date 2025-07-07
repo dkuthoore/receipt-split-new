@@ -92,6 +92,7 @@ class ReceiptSplitter {
             }
 
             this.receiptData = await response.json();
+            this.displayImagePreview(file);
             this.displayReceiptData();
             this.showStep('items-section');
             this.showStep('people-section');
@@ -118,6 +119,28 @@ class ReceiptSplitter {
     showUploadStatus(show) {
         const statusEl = document.getElementById('upload-status');
         statusEl.style.display = show ? 'block' : 'none';
+    }
+
+    displayImagePreview(file) {
+        const previewContainer = document.getElementById('image-preview');
+        const previewImg = document.getElementById('preview-thumbnail');
+        const fullscreenImg = document.getElementById('fullscreen-image');
+        
+        // Create URL for the uploaded file
+        const imageUrl = URL.createObjectURL(file);
+        
+        // Set preview images
+        previewImg.src = imageUrl;
+        fullscreenImg.src = imageUrl;
+        
+        // Show preview container
+        previewContainer.style.display = 'block';
+        
+        // Add click event to open modal
+        previewImg.onclick = () => {
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            modal.show();
+        };
     }
 
     displayReceiptData() {
@@ -228,32 +251,36 @@ class ReceiptSplitter {
         assignmentList.innerHTML = this.receiptData.items.map((item, index) => `
             <div class="assignment-item">
                 <h6>${item.name} - $${this.formatPrice(item.price)}</h6>
-                ${this.people.map(person => `
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" 
-                               id="item${index}_${person}" 
-                               onchange="app.updateAssignment(${index}, '${person}', this.checked)">
-                        <label class="form-check-label" for="item${index}_${person}">
-                            ${person}
-                        </label>
-                    </div>
-                `).join('')}
+                <div class="person-buttons">
+                    ${this.people.map(person => {
+                        const isAssigned = this.assignments[index] && this.assignments[index].includes(person);
+                        return `
+                            <button class="btn person-btn ${isAssigned ? 'btn-primary' : 'btn-outline-light'}" 
+                                    onclick="app.toggleAssignment(${index}, '${person}')">
+                                ${person}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
             </div>
         `).join('');
     }
 
-    updateAssignment(itemIndex, person, isChecked) {
+    toggleAssignment(itemIndex, person) {
         if (!this.assignments[itemIndex]) {
             this.assignments[itemIndex] = [];
         }
 
-        if (isChecked) {
-            if (!this.assignments[itemIndex].includes(person)) {
-                this.assignments[itemIndex].push(person);
-            }
-        } else {
+        if (this.assignments[itemIndex].includes(person)) {
+            // Remove person from assignment
             this.assignments[itemIndex] = this.assignments[itemIndex].filter(p => p !== person);
+        } else {
+            // Add person to assignment
+            this.assignments[itemIndex].push(person);
         }
+        
+        // Update the assignment section to reflect changes
+        this.updateAssignmentSection();
     }
 
     async calculateSplit() {
@@ -332,7 +359,7 @@ class ReceiptSplitter {
         this.assignments = {};
 
         // Hide all sections except upload
-        ['items-section', 'people-section', 'assign-section', 'results-section'].forEach(id => {
+        ['items-section', 'people-section', 'assign-section', 'results-section', 'image-preview'].forEach(id => {
             this.hideStep(id);
         });
 
@@ -345,6 +372,17 @@ class ReceiptSplitter {
         document.getElementById('people-list').innerHTML = '<p class="text-muted">No people added yet.</p>';
         document.getElementById('assignment-list').innerHTML = '';
         document.getElementById('results-table').innerHTML = '';
+        
+        // Clean up image preview
+        const previewImg = document.getElementById('preview-thumbnail');
+        const fullscreenImg = document.getElementById('fullscreen-image');
+        if (previewImg.src) {
+            URL.revokeObjectURL(previewImg.src);
+            previewImg.src = '';
+        }
+        if (fullscreenImg.src) {
+            fullscreenImg.src = '';
+        }
     }
 
     formatPrice(price) {

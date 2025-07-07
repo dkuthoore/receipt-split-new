@@ -126,11 +126,25 @@ body {
     --bs-table-bg: var(--bg-secondary);
     --bs-table-border-color: var(--border-color);
     --bs-table-striped-bg: var(--bg-tertiary);
+    --bs-table-color: var(--text-primary);
 }
 
 .table-dark th,
 .table-dark td {
     border-color: var(--border-color);
+    color: var(--text-primary) !important;
+}
+
+.table-dark tbody tr:nth-of-type(odd) {
+    background-color: var(--bg-tertiary);
+}
+
+.table-success {
+    background-color: rgba(40, 167, 69, 0.3) !important;
+}
+
+.table-success td {
+    color: var(--text-primary) !important;
 }
 
 /* Person Tags */
@@ -241,13 +255,13 @@ body {
 .alert-success {
     background-color: rgba(40, 167, 69, 0.2);
     border-color: var(--accent-success);
-    color: #d4edda;
+    color: var(--text-primary);
 }
 
 .alert-danger {
     background-color: rgba(220, 53, 69, 0.2);
     border-color: var(--accent-danger);
-    color: #f8d7da;
+    color: var(--text-primary);
 }
 
 /* Smooth Transitions */
@@ -262,4 +276,31 @@ body {
         outline: 2px solid var(--accent-primary);
         outline-offset: 2px;
     }
+}
+
+/* Additional Text Color Overrides */
+.text-muted {
+    color: var(--text-secondary) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary) !important;
+}
+
+p, span, div {
+    color: var(--text-primary);
+}
+
+.card-title, .card-text {
+    color: var(--text-primary) !important;
+}
+
+/* Bootstrap Override for Better Visibility */
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Small text improvements */
+small, .small {
+    color: var(--text-secondary) !important;
 }

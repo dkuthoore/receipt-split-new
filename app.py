@@ -32,8 +32,18 @@ DEFAULT_MODEL_STR = "claude-sonnet-4-20250514"
 def process_image(image_data, image_format):
     """Process uploaded image and prepare for Claude API"""
     try:
-        # Convert image to RGB if necessary and ensure it's in a supported format
-        img = Image.open(BytesIO(image_data))
+        # Reset BytesIO position in case it was read before
+        if hasattr(image_data, 'seek'):
+            image_data.seek(0)
+        
+        # Create BytesIO object from data
+        if isinstance(image_data, bytes):
+            image_stream = BytesIO(image_data)
+        else:
+            image_stream = image_data
+            
+        # Open and process image
+        img = Image.open(image_stream)
         
         # Convert to RGB if image is in RGBA or other formats
         if img.mode != 'RGB':
@@ -52,7 +62,8 @@ def process_image(image_data, image_format):
         return base64.b64encode(processed_data).decode('utf-8'), 'image/jpeg'
     except Exception as e:
         logging.error(f"Error processing image: {str(e)}")
-        raise
+        logging.error(f"Image data type: {type(image_data)}, size: {len(image_data) if hasattr(image_data, '__len__') else 'unknown'}")
+        raise ValueError(f"Could not process image: {str(e)}")
 
 def extract_receipt_data(image_base64, media_type):
     """Extract receipt data using Claude API"""
@@ -103,7 +114,14 @@ def extract_receipt_data(image_base64, media_type):
             ]
         )
         
-        response_text = message.content[0].text.strip()
+        # Handle Claude response - access text content properly
+        try:
+            response_text = message.content[0].text.strip()
+        except (AttributeError, IndexError) as e:
+            logging.error(f"Error accessing Claude response content: {e}")
+            logging.error(f"Response structure: {message.content}")
+            raise ValueError("Unexpected response format from Claude API")
+            
         logging.debug(f"Claude response: {response_text}")
         
         # Try to extract JSON from response

@@ -177,11 +177,13 @@ class ReceiptSplitter {
                         <span>
                             $<input type="number" 
                                    id="tip-input" 
-                                   value="${this.formatPrice(this.receiptData.tip)}" 
+                                   value="${this.receiptData.tip === 0 ? '' : this.formatPrice(this.receiptData.tip)}" 
                                    step="0.01" 
                                    min="0"
+                                   placeholder="${this.receiptData.tip === 0 ? '0.00' : ''}"
                                    style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 2px 6px;"
-                                   onchange="app.updateTip(this.value)">
+                                   onchange="app.updateTip(this.value)"
+                                   onfocus="if(this.value === '' && this.placeholder === '0.00') this.placeholder = ''">
                         </span>
                     </div>
                     <div class="info-item">

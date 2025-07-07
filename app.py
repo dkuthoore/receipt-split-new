@@ -7,6 +7,14 @@ import anthropic
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 
+# Import HEIF support for iPhone images
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+    logging.debug("HEIF support enabled")
+except ImportError:
+    logging.warning("HEIF support not available - install pillow-heif for iPhone image support")
+
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -32,18 +40,50 @@ DEFAULT_MODEL_STR = "claude-sonnet-4-20250514"
 def process_image(image_data, image_format):
     """Process uploaded image and prepare for Claude API"""
     try:
-        # Reset BytesIO position in case it was read before
-        if hasattr(image_data, 'seek'):
-            image_data.seek(0)
-        
         # Create BytesIO object from data
         if isinstance(image_data, bytes):
             image_stream = BytesIO(image_data)
         else:
             image_stream = image_data
             
-        # Open and process image
-        img = Image.open(image_stream)
+        # Try to detect and open image with better error handling
+        image_stream.seek(0)
+        
+        # Try to identify the image format first
+        try:
+            img = Image.open(image_stream)
+            img.load()  # Force loading to catch any format issues early
+        except Exception as img_error:
+            # If PIL can't open it, try checking if it's a valid image file
+            image_stream.seek(0)
+            magic_bytes = image_stream.read(16)
+            image_stream.seek(0)
+            
+            # Check for common image format magic bytes
+            if magic_bytes.startswith(b'\xff\xd8\xff'):  # JPEG
+                logging.debug("Detected JPEG format")
+            elif magic_bytes.startswith(b'\x89PNG\r\n\x1a\n'):  # PNG
+                logging.debug("Detected PNG format")
+            elif magic_bytes.startswith(b'GIF8'):  # GIF
+                logging.debug("Detected GIF format")
+            elif magic_bytes.startswith(b'RIFF') and b'WEBP' in magic_bytes:  # WebP
+                logging.debug("Detected WebP format")
+            elif magic_bytes.startswith(b'\x00\x00\x00') and b'ftyp' in magic_bytes:  # HEIC/HEIF
+                logging.debug("Detected HEIC/HEIF format")
+            else:
+                logging.error(f"Unknown image format. Magic bytes: {magic_bytes.hex()}")
+                raise ValueError("Unsupported image format. Please use JPEG, PNG, GIF, WebP, or HEIC images.")
+            
+            # Try PIL again with explicit format
+            try:
+                img = Image.open(image_stream)
+                img.load()
+            except Exception:
+                raise ValueError(f"Could not process image file. Error: {str(img_error)}")
+        
+        # Verify image has valid dimensions
+        if img.size[0] <= 0 or img.size[1] <= 0:
+            raise ValueError("Invalid image dimensions")
         
         # Convert to RGB if image is in RGBA or other formats
         if img.mode != 'RGB':
@@ -59,11 +99,17 @@ def process_image(image_data, image_format):
         img.save(output, format='JPEG', quality=90)
         processed_data = output.getvalue()
         
+        logging.debug(f"Image processed successfully. Original size: {img.size}, Format: {img.format}")
+        
         return base64.b64encode(processed_data).decode('utf-8'), 'image/jpeg'
+        
+    except ValueError:
+        # Re-raise ValueError as-is (these are user-friendly messages)
+        raise
     except Exception as e:
-        logging.error(f"Error processing image: {str(e)}")
+        logging.error(f"Unexpected error processing image: {str(e)}")
         logging.error(f"Image data type: {type(image_data)}, size: {len(image_data) if hasattr(image_data, '__len__') else 'unknown'}")
-        raise ValueError(f"Could not process image: {str(e)}")
+        raise ValueError("Unable to process the uploaded image. Please try a different image file.")
 
 def extract_receipt_data(image_base64, media_type):
     """Extract receipt data using Claude API"""

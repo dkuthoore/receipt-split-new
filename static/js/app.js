@@ -68,6 +68,12 @@ class ReceiptSplitter {
             return;
         }
 
+        // Check file size (limit to 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            this.showError('Image file is too large. Please choose a file smaller than 10MB.');
+            return;
+        }
+
         // Show loading state
         this.showUploadStatus(true);
 
@@ -92,7 +98,18 @@ class ReceiptSplitter {
 
         } catch (error) {
             console.error('Error processing receipt:', error);
-            this.showError(`Failed to process receipt: ${error.message}`);
+            
+            // Provide helpful error messages
+            let userMessage = error.message;
+            if (error.message.includes('Unsupported image format')) {
+                userMessage = 'This image format is not supported. Please use JPEG, PNG, or HEIC images.';
+            } else if (error.message.includes('Could not process image')) {
+                userMessage = 'Could not process this image. Please try taking a clearer photo or using a different image.';
+            } else if (error.message.includes('Failed to process receipt')) {
+                userMessage = 'Unable to read this receipt. Please ensure the image is clear and contains a receipt.';
+            }
+            
+            this.showError(userMessage);
         } finally {
             this.showUploadStatus(false);
         }

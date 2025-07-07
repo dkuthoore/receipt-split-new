@@ -323,11 +323,36 @@ def calculate_split():
                     proportion = person_totals[person] / total_assigned
                     person_totals[person] += (tax * proportion) + (tip * proportion)
         
-        # Format results
+        # Format results with breakdown
         results = []
         for person in people:
+            subtotal_amount = 0
+            tax_amount = 0
+            tip_amount = 0
+            
+            if person_totals[person] > 0 and total_assigned > 0:
+                proportion = person_totals[person] / (total_assigned + (tax * total_assigned / subtotal if subtotal > 0 else 0) + (tip * total_assigned / subtotal if subtotal > 0 else 0))
+                base_amount = person_totals[person] - (tax * person_totals[person] / total_assigned if total_assigned > 0 else 0) - (tip * person_totals[person] / total_assigned if total_assigned > 0 else 0)
+                
+                # Calculate actual breakdown
+                for i, item in enumerate(items):
+                    item_index = str(i)
+                    assigned_people = assignments.get(item_index, [])
+                    if person in assigned_people and len(assigned_people) > 0:
+                        item_price = float(item.get('price', 0))
+                        price_per_person = item_price / len(assigned_people)
+                        subtotal_amount += price_per_person
+                
+                if subtotal_amount > 0 and total_assigned > 0:
+                    proportion = subtotal_amount / total_assigned
+                    tax_amount = tax * proportion
+                    tip_amount = tip * proportion
+            
             results.append({
                 'name': person,
+                'subtotal': round(subtotal_amount, 2),
+                'tax': round(tax_amount, 2),
+                'tip': round(tip_amount, 2),
                 'total': round(person_totals[person], 2)
             })
         

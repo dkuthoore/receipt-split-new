@@ -91,6 +91,7 @@ class ReceiptSplitter {
             this.receiptData = await response.json();
             this.displayImagePreview(file);
             this.displayReceiptData();
+            this.hideUploadArea();
             this.showStep('items-section');
             this.showStep('people-section');
 
@@ -116,6 +117,11 @@ class ReceiptSplitter {
     showUploadStatus(show) {
         const statusEl = document.getElementById('upload-status');
         statusEl.style.display = show ? 'block' : 'none';
+    }
+
+    hideUploadArea() {
+        const uploadArea = document.getElementById('upload-area');
+        uploadArea.style.display = 'none';
     }
 
     displayImagePreview(file) {
@@ -168,7 +174,15 @@ class ReceiptSplitter {
                     </div>
                     <div class="info-item">
                         <span>Tip:</span>
-                        <span>$${this.formatPrice(this.receiptData.tip)}</span>
+                        <span>
+                            $<input type="number" 
+                                   id="tip-input" 
+                                   value="${this.formatPrice(this.receiptData.tip)}" 
+                                   step="0.01" 
+                                   min="0"
+                                   style="width: 80px; background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px; padding: 2px 6px;"
+                                   onchange="app.updateTip(this.value)">
+                        </span>
                     </div>
                     <div class="info-item">
                         <span><strong>Total:</strong></span>
@@ -244,6 +258,25 @@ class ReceiptSplitter {
         }
     }
 
+    updateTip(newTip) {
+        if (!this.receiptData) return;
+        
+        const tipValue = parseFloat(newTip) || 0;
+        this.receiptData.tip = tipValue;
+        
+        // Update the displayed total
+        this.receiptData.total = this.receiptData.subtotal + this.receiptData.tax + this.receiptData.tip;
+        
+        // Update the total display
+        const totalDisplay = document.querySelector('#receipt-info .info-item:last-child span:last-child strong');
+        if (totalDisplay) {
+            totalDisplay.textContent = `$${this.formatPrice(this.receiptData.total)}`;
+        }
+        
+        // Recalculate split
+        this.calculateSplit();
+    }
+
     updateAssignmentSection() {
         if (!this.receiptData || this.people.length === 0) return;
 
@@ -308,43 +341,10 @@ class ReceiptSplitter {
         // Calculate split in real-time
         this.calculateSplit();
         
-        // Update assignment summary
-        this.updateAssignmentSummary();
+        
     }
     
-    updateAssignmentSummary() {
-        if (!this.receiptData || this.people.length === 0) {
-            document.getElementById('assignment-summary').style.display = 'none';
-            return;
-        }
-        
-        // Calculate how many items are assigned
-        const totalItems = this.receiptData.items.length;
-        const assignedItems = Object.values(this.assignments).filter(assignment => assignment.length > 0).length;
-        const percentage = totalItems > 0 ? Math.round((assignedItems / totalItems) * 100) : 0;
-        
-        const summaryDiv = document.getElementById('assignment-summary');
-        summaryDiv.style.display = 'block';
-        
-        summaryDiv.innerHTML = `
-            <div class="alert alert-info py-2">
-                <div class="d-flex justify-content-between align-items-center">
-                    <span>
-                        <i class="fas fa-chart-pie me-2"></i>
-                        ${assignedItems} of ${totalItems} items assigned
-                    </span>
-                    <span class="badge bg-${percentage === 100 ? 'success' : 'warning'}">
-                        ${percentage}%
-                    </span>
-                </div>
-                ${percentage < 100 ? `
-                    <div class="progress mt-2" style="height: 4px;">
-                        <div class="progress-bar bg-primary" role="progressbar" style="width: ${percentage}%"></div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }
+    
 
     async calculateSplit() {
         if (!this.receiptData || this.people.length === 0) {
@@ -387,31 +387,50 @@ class ReceiptSplitter {
     displayResults(splitData) {
         const resultsTable = document.getElementById('results-table');
         
-        // Show individual splits
-        resultsTable.innerHTML = splitData.splits.map(split => `
-            <tr>
-                <td>${split.name}</td>
-                <td class="fw-bold">$${this.formatPrice(split.total)}</td>
-            </tr>
-        `).join('');
-
-        // Add total row with validation
-        const expectedTotal = this.receiptData.total;
-        const calculatedTotal = splitData.total_split;
-        const isMatching = Math.abs(expectedTotal - calculatedTotal) < 0.01;
+        // Calculate totals for the bottom row
+        let totalSubtotal = 0, totalTax = 0, totalTip = 0, totalAmount = 0;
         
+        // Show individual splits with breakdown
+        resultsTable.innerHTML = splitData.splits.map(split => {
+            // Calculate individual breakdowns
+            const subtotalSplit = split.subtotal || 0;
+            const taxSplit = split.tax || 0;
+            const tipSplit = split.tip || 0;
+            
+            totalSubtotal += subtotalSplit;
+            totalTax += taxSplit;
+            totalTip += tipSplit;
+            totalAmount += split.total;
+            
+            return `
+                <tr>
+                    <td>${split.name}</td>
+                    <td>$${this.formatPrice(subtotalSplit)}</td>
+                    <td>$${this.formatPrice(taxSplit)}</td>
+                    <td>$${this.formatPrice(tipSplit)}</td>
+                    <td class="fw-bold">$${this.formatPrice(split.total)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Add total row
         resultsTable.innerHTML += `
             <tr class="table-success">
-                <td><strong>Total Split</strong></td>
-                <td><strong>$${this.formatPrice(calculatedTotal)}</strong></td>
+                <td><strong>Total</strong></td>
+                <td><strong>$${this.formatPrice(totalSubtotal)}</strong></td>
+                <td><strong>$${this.formatPrice(totalTax)}</strong></td>
+                <td><strong>$${this.formatPrice(totalTip)}</strong></td>
+                <td><strong>$${this.formatPrice(totalAmount)}</strong></td>
             </tr>
         `;
         
-        // Add validation row if totals don't match
+        // Add validation row if totals don't match receipt
+        const expectedTotal = this.receiptData.total;
+        const isMatching = Math.abs(expectedTotal - totalAmount) < 0.01;
         if (!isMatching && expectedTotal > 0) {
             resultsTable.innerHTML += `
                 <tr class="text-warning">
-                    <td colspan="2" class="text-center small">
+                    <td colspan="5" class="text-center small">
                         <i class="fas fa-exclamation-triangle me-1"></i>
                         Receipt total: $${this.formatPrice(expectedTotal)}
                     </td>
@@ -441,6 +460,9 @@ class ReceiptSplitter {
         // Reset form
         document.getElementById('receipt-input').value = '';
         document.getElementById('person-input').value = '';
+        
+        // Show upload area again
+        document.getElementById('upload-area').style.display = 'block';
         
         // Clear displays
         document.getElementById('items-table').innerHTML = '';

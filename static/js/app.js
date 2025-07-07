@@ -312,12 +312,6 @@ class ReceiptSplitter {
                         `;
                     }).join('')}
                 </div>
-                ${this.assignments[index] && this.assignments[index].length > 0 ? `
-                    <small class="text-muted mt-2 d-block">
-                        Split ${this.assignments[index].length} way${this.assignments[index].length > 1 ? 's' : ''}: 
-                        $${this.formatPrice(item.price / this.assignments[index].length)} each
-                    </small>
-                ` : ''}
             </div>
         `).join('');
     }

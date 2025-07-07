@@ -144,9 +144,9 @@ body {
 }
 
 .table-success td {
-    color: var(--text-primary) !important;
+    color: white !important;
     font-weight: 600;
-    background-color: var(--accent-success) !important;
+    background-color: #28a745 !important;
 }
 
 /* Person Tags */

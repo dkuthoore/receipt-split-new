@@ -3,6 +3,7 @@
 
 An AI-powered web application that automatically parses receipt images and helps users split bills among multiple people. Built with Flask and powered by Anthropic's Claude AI for intelligent receipt recognition.
 
+![Receipt Splitter Demo](https://img.shields.io/badge/Status-Active-brightgreen) ![Python](https://img.shields.io/badge/Python-3.11+-blue) ![Flask](https://img.shields.io/badge/Flask-3.1+-red) ![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3-purple)
 
 ## Features ✨
 
@@ -36,6 +37,42 @@ An AI-powered web application that automatically parses receipt images and helps
 ### Deployment
 - **Replit**: Cloud platform for hosting and deployment
 - **Nix**: Package management and environment configuration
+
+## Getting Started 🚀
+
+### Prerequisites
+
+1. **Replit Account**: Create a free account at [replit.com](https://replit.com)
+2. **Anthropic API Key**: Get your API key from [Anthropic Console](https://console.anthropic.com/)
+
+### Installation
+
+1. **Fork this Repl** or create a new Python Repl and copy the code
+2. **Set up Environment Variables**:
+   - Click on "Secrets" in the left sidebar
+   - Add `ANTHROPIC_API_KEY` with your Anthropic API key value
+3. **Run the Application**:
+   - Click the "Run" button
+   - The app will be available at the provided URL
+
+### Local Development (Optional)
+
+If running locally outside of Replit:
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd receipt-splitter
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variable
+export ANTHROPIC_API_KEY="your-api-key-here"
+
+# Run the application
+python main.py
+```
 
 ## How to Use 📱
 
@@ -107,6 +144,16 @@ receipt-splitter/
 └── README.md             # This file
 ```
 
+## Configuration ⚙️
+
+### Environment Variables
+
+- `ANTHROPIC_API_KEY`: Required for AI receipt processing
+- `SESSION_SECRET`: Flask session security (optional, defaults to dev key)
+
+### Model Configuration
+
+The app uses Claude Sonnet 4 (`claude-sonnet-4-20250514`) - Anthropic's latest model for optimal receipt parsing accuracy.
 
 ## Contributing 🤝
 
@@ -116,6 +163,13 @@ Contributions are welcome! Here are some ways you can help:
 2. **Feature Requests**: Suggest new features or improvements
 3. **Code Contributions**: Fork the repo and submit pull requests
 4. **Documentation**: Help improve documentation and examples
+
+### Development Guidelines
+
+- Follow Python PEP 8 style guidelines
+- Write descriptive commit messages
+- Test with various receipt formats
+- Ensure mobile responsiveness for UI changes
 
 ## Troubleshooting 🔧
 
@@ -142,3 +196,20 @@ Contributions are welcome! Here are some ways you can help:
 ## License 📄
 
 This project is open source and available under the [MIT License](LICENSE).
+
+## Support 💬
+
+- **Issues**: Report bugs or request features via GitHub Issues
+- **Community**: Join discussions in the Replit community
+- **Documentation**: Check this README and inline code comments
+
+## Acknowledgments 🙏
+
+- [Anthropic](https://www.anthropic.com/) for providing the Claude AI API
+- [Bootstrap](https://getbootstrap.com/) for the responsive UI framework
+- [Flask](https://flask.palletsprojects.com/) for the lightweight web framework
+- [Replit](https://replit.com/) for the development and hosting platform
+
+---
+
+Made with ❤️ using AI and modern web technologies
